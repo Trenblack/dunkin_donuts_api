@@ -4,17 +4,34 @@ import collections
 import xml.etree.ElementTree as ET
 import uuid
 from .models import Employee, Source, Payment
+from .helper import qs_to_csv_response
 
+@api_view(["POST"])
+def getCsv(request):
+    response = Response()
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "*"
+    response["Access-Control-Max-Age"] = "1000"
+    response["Access-Control-Allow-Headers"] = "*"
+    if request.method == "POST":
+        print('kek_-----')
+        print(request.data)
+        csv_type, batch_id = request.data['type'], request.data['batch_id']
+        if csv_type == "payments":
+            return qs_to_csv_response(Payment.objects.all(), 'payments') 
+        elif csv_type == "sources":
+            return Response({'batchId':batch_id})
 
 @api_view(["GET", "POST"])
 def getData(request):
     response = Response()
-    # response["Access-Control-Allow-Origin"] = "*"
-    # response["Access-Control-Allow-Methods"] = "*"
-    # response["Access-Control-Max-Age"] = "1000"
-    # response["Access-Control-Allow-Headers"] = "*"
+    response["Access-Control-Allow-Origin"] = "*"
+    response["Access-Control-Allow-Methods"] = "*"
+    response["Access-Control-Max-Age"] = "1000"
+    response["Access-Control-Allow-Headers"] = "*"
     if request.method == "GET":
-        return qs_to_csv_response(Payment.objects.all(), 'sources')
+        #return qs_to_csv_response(Payment.objects.all(), 'sources')
+        pass
     elif request.method == "POST":
         t = request.FILES['upload_file']
         response.data = helper(t.file)
@@ -183,20 +200,6 @@ def sql_helper(file):
             cur = ["", ""]
             root.clear()
 
-from django.db import connection
-from django.utils import timezone
-from django.http import HttpResponse
-
-def qs_to_csv_response(qs, filename):
-    sql, params = qs.query.sql_with_params()
-    sql = f"COPY ({sql}) TO STDOUT WITH (FORMAT CSV, HEADER, DELIMITER E'\t')"
-    filename = f'{filename}-{timezone.now():%Y-%m-%d_%H-%M-%S}.csv'
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename={filename}'
-    with connection.cursor() as cur:
-        sql = cur.mogrify(sql, params)
-        cur.copy_expert(sql, response)
-    return response
 
 """
 Ledger:
