@@ -22,6 +22,7 @@ import AddIcon from '@mui/icons-material/Add';
 import SummarizeIcon from '@mui/icons-material/Summarize';
 import DownloadIcon from '@mui/icons-material/Download';
 import FilePicker from './FilePicker';
+import ReportsTable from './ReportsTable';
 
 const drawerWidth = 180;
 // change to permanent bar.
@@ -91,18 +92,21 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
   }),
 );
 
+
+
 export default function MiniDrawer() {
-  const theme = useTheme();
-  const [open, setOpen] = React.useState(false);
+  const [curIndex, setCurIndex] = React.useState(0);
 
-  const handleDrawerOpen = () => {
-    setOpen(true);
-  };
-
-  const handleDrawerClose = () => {
-    setOpen(false);
-  };
-
+  const items = [
+    {
+      text:"Payment",
+      icon: <AddIcon />,
+    },
+    {
+      text:"Reports",
+      icon: <DownloadIcon />,
+    },
+  ]
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
@@ -124,13 +128,11 @@ export default function MiniDrawer() {
         <Toolbar />
         <Box sx={{ overflow: 'auto' }}>
           <List>
-            {['Payment', 'Reports'].map((text, index) => (
-              <ListItem key={text} disablePadding>
-                <ListItemButton>
-                  <ListItemIcon>
-                    {index === 0 ? <AddIcon/> : <DownloadIcon/>}
-                  </ListItemIcon>
-                  <ListItemText primary={text} />
+            {items.map((item, index) => (
+              <ListItem key={item.text} disablePadding>
+                <ListItemButton onClick={()=>setCurIndex(index)}>
+                  <ListItemIcon> {item.icon} </ListItemIcon>
+                  <ListItemText primary={item.text} />
                 </ListItemButton>
               </ListItem>
             ))}
@@ -150,9 +152,8 @@ export default function MiniDrawer() {
           </List>
         </Box>
       </Drawer>
-    <Box component="main" sx={{ flexGrow: 1, p: 9 }}>
-        <Typography mt="20px" ml="100px" variant={'h4'} align="center">New Payment</Typography>
-        <FilePicker />
+    <Box ml="100px" component="main" sx={{ flexGrow: 1, p: 9 }}>
+        {curIndex === 0 ? <FilePicker />:<ReportsTable />}
     </Box>
     </Box>
   );

@@ -1,6 +1,5 @@
-import React, {useState} from 'react'
+import React, {useState, useEffect} from 'react'
 import { FileDrop } from 'react-file-drop'
-import {useRef } from 'react'
 import { Typography } from '@mui/material';
 import "./f.css"
 import axios from 'axios'
@@ -11,7 +10,20 @@ import CircularProgress from '@mui/material/CircularProgress';
 export default function FilePicker() {
     const [isFilePicked, setIsFiledPicked] = useState(false)
     const [data, setData] = useState()
-    
+
+    // useEffect(() => {
+    //   const storedData = window.localStorage.getItem('data')
+    //   console.log(storedData)
+    //   console.log(storedData === null)
+    //   if(typeof storedData !== undefined){
+    //     console.log('omg')
+    //     setData(JSON.parse(storedData))
+    //   }
+    // }, []);
+    // useEffect(() => {
+    //   window.localStorage.setItem('data', JSON.stringify(data));
+    // }, [data]);
+
     const changeHandler = (files, event) => {
       if(typeof files[0] === "undefined" || files[0].type != "text/xml"){
         console.log('File not supported')
@@ -53,17 +65,35 @@ export default function FilePicker() {
 
     const approve = () => {
       //console.log("approving batch " + data['batch_id'])
+      const data = new FormData() 
+      data.append('type', 'payments')
+      data.append('batch_id', 'xd')
+      axios({
+        url: 'http://127.0.0.1:8000/getCsv/',
+        method: 'POST',
+        data:data,
+        responseType: 'blob', // important
+      }).then((response) => {
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'payment.csv');
+        document.body.appendChild(link);
+        link.click();
+      });
     }
 
     const styles = {border: '1px solid black', width: 600, color: 'black', padding: 20 };
     return (
     <React.Fragment>
+        <Typography mt="20px" variant={'h4'} align="center">New Payment</Typography>
         {data? 
-        <div style={{marginLeft:"100px", marginTop:"20px"}}><CenteredTabs onApprove={approve} onDiscard={discard} data={data}/></div>:
-        <div style={{border:"1px dotted grey", marginTop:"20px", marginLeft:"100px"}}>
+        <div style={{marginTop:"20px"}}><CenteredTabs onApprove={approve} onDiscard={discard} data={data}/></div>:
+        <div style={{border:"1px dotted grey", marginTop:"20px"}}>
+          <input hidden accept="image/*" multiple type="file" />
           <FileDrop
             onDrop={(files, event) => changeHandler(files, event)}
-            onTargetClick={changeHandler}>
+            >
               {isFilePicked? <CircularProgress />:<NoteAddOutlinedIcon />}
               <Typography>Drag and Drop XML file</Typography> 
           </FileDrop>

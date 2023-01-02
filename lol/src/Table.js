@@ -19,7 +19,7 @@ export default function CenteredTabs(props) {
       <Typography align="center">
         Total cost: ${parseFloat(props['data']['total_cost']).toLocaleString()} amongst {props['data']['total_payments'].toLocaleString()} payments
       </Typography>
-      <Stack direction="row" spacing={2}>
+      <Stack mt="10px" direction="row" spacing={2}>
         <Button onClick={props['onApprove']} variant="contained" style={{backgroundColor:"#DA1884"}}>
           Approve
         </Button>
