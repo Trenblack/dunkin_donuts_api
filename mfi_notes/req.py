@@ -15,16 +15,17 @@ def createIdempId():
     print(uuid.uuid4())
 
 
-# files = {'upload_file': open('dunkin.xml','rb')}
-# print(files)
-# values = {'DB': 'photcat', 'OUT': 'csv', 'SHORT': 'short'}
+files = {'upload_file': open('kek.xml','rb')}
+print(files)
+values = {'DB': 'photcat', 'OUT': 'csv', 'SHORT': 'short'}
 
 
-# r = requests.post(url, files=files, data=values)
+# r = requests.post(url+"approve/", files=files, data=values)
 # print(r.text)
 
 # r = requests.get(url)
 # print(r.text)
 
-r = requests.get(url+"approve/")
+r = requests.get(url)
+open("payments.csv", "wb").write(r.content)
 print(r.text)

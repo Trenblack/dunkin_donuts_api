@@ -1,51 +1,130 @@
 file_path = r'dunkin.xml'
 import xml.etree.ElementTree as ET
 import collections
+import json
 
+class Employee:
+    def __init__(self):
+        self.d_id = ""
+        self.mfi_created = ""
+        self.d_branch = ""
+        self.first_name = ""
+        self.last_name = ""
+        self.phone = ""
+        self.plaid_id = ""
+        self.loan_acc = ""
+    def __str__(self):
+        return json.dumps(self.__dict__)
+
+class Source:
+    def __init__(self):
+        self.d_id = ""
+        self.mfi_created = ""
+        self.aba_routing = ""
+        self.account_number = ""
+        self.name = ""
+        self.dba = ""
+        self.ein = ""
+    def __str__(self):
+        return json.dumps(self.__dict__)
+
+class Payment:
+    def __init__(self):
+        self.batch_id = ""
+        self.pay_to = ""
+        self.pay_from = ""
+        self.amount = ""
+        self.status = "NOT EXECUTED"
+        self.last_updated = ""
+    def __str__(self):
+        return json.dumps(self.__dict__)
+
+
+# def user_table(file):
+#     context = ET.iterparse(file, events=("start", "end"))
+#     newEmp = Employee()
+#     newSource = Source()
+#     curPayment = Payment()
+
+emp_list = []
+source_list = []
+payment_list = []
 
 def helper(file):
-    branch_amt = collections.defaultdict(float)
-    branch_cnt = collections.defaultdict(int)
-    source_amt = collections.defaultdict(float)
-    source_cnt = collections.defaultdict(int)
-    total = 0
-
     context = ET.iterparse(file, events=("start", "end"))
-        
+    batch_id = 'xd'
     cur = ["", ""]
+    newEmp = Employee()
+    newSource = Source()
+    curPayment = Payment()
+    empSeen = set()
+    sourceSeen = set()
+    cur_employee_id = ""
+    cur_source_id = ""
+    swap = 1
     for index, (event, elem) in enumerate(context):
         # Get the root element.
+        #print(index, event, elem, elem.text)
         if index == 0:
-            root = elem
-        if event == "end" and elem.tag == "DunkinBranch":
+            root = elem # might not need root at all
+        if event == "end" and elem.tag == "DunkinId":
+            # employee_id
+            if swap > 0:
+                cur_employee_id = elem.text
+                newEmp.d_id = cur_employee_id
+                print(cur_employee_id)
+                curPayment.pay_to = cur_employee_id
+            else:
+                cur_source_id = elem.text
+                newSource.d_id = cur_source_id
+                curPayment.pay_from = cur_source_id
+            swap *= -1
+            elem.clear()
+        elif event == "end" and elem.tag == "DunkinBranch":
             # ... process record elements ...
-            cur[0] = elem.text
-            root.clear()
-        if event == "end" and elem.tag == "AccountNumber":
+            cur_employee_branch = elem.text
+            cur[0] = cur_employee_branch
+            newEmp.d_branch = cur_employee_branch
+            elem.clear()
+        elif event == "end" and elem.tag == "FirstName":
             # ... process record elements ...
-            cur[1] = elem.text
-            root.clear()
-        if event == "end" and elem.tag == "Amount":
+            cur_employee_fname = elem.text
+            newEmp.first_name = cur_employee_fname
+            elem.clear()
+        elif event == "end" and elem.tag == "AccountNumber":
+            cur_source_acc = elem.text
+            newSource.account_number = cur_source_acc
+            elem.clear()
+        elif event == "end" and elem.tag == "Amount":
             # ... process record elements ...
             amt = float(elem.text[1:])
-            total += amt
-            branch_amt[cur[0]] += amt
-            branch_cnt[cur[0]] += 1
-            source_amt[cur[1]] += amt
-            source_cnt[cur[1]] += 1
+            curPayment.amount = amt
+            curPayment.batch_id = batch_id
+            if cur_employee_id not in empSeen:
+                emp_list.append(newEmp)
+                empSeen.add(cur_employee_id)
+            if cur_source_id not in sourceSeen:
+                source_list.append(newSource)
+                sourceSeen.add(cur_source_id)
+            payment_list.append(curPayment)
+            newEmp = Employee()
+            newSource = Source()
+            curPayment = Payment()
+            #
             cur = ["", ""]
-            root.clear()
+            elem.clear()
+        root.clear()
 
-    branches = [(k,"$" + str(round(v,2)), branch_cnt[k]) for k,v in branch_amt.items()]
-    sources = [(k,"$" + str(round(v,2)), source_cnt[k]) for k,v in source_amt.items()]
-    data = {
-        "total": "$"+str(round(total,2)),
-        "branches": branches,
-        "sources": sources
-    }
-    return data
+helper(file_path)
+for x in emp_list:
+    print(x)
+for x in source_list:
+    print(x)
+for x in payment_list:
+    print(x)
 
-print(helper(file_path))
+    # d_id, first_name, last_name, email
+
 
 """ 
 from xml.etree.ElementTree import iterparse
