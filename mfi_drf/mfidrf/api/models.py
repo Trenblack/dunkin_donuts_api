@@ -26,3 +26,7 @@ class Payment(models.Model):
     amount = models.CharField(max_length=50, default="")    
     status = models.CharField(default="NOT EXECUTED", max_length=50)
     last_updated = models.DateTimeField(auto_now_add=True)
+
+class Batch(models.Model):
+    batch_id = models.CharField(max_length=50, primary_key=True)
+    data = models.JSONField(default=dict)

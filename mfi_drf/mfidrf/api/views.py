@@ -3,10 +3,12 @@ from rest_framework.decorators import api_view
 import collections
 import xml.etree.ElementTree as ET
 import uuid
-from .models import Employee, Source, Payment
-from .helper import qs_to_csv_response
+from .models import Employee, Source, Payment, Batch
+from .helper import qs_to_csv_response, succint_view, get_batches, newParse
 
-@api_view(["POST"])
+
+
+@api_view(["GET", "POST"])
 def getCsv(request):
     response = Response()
     response["Access-Control-Allow-Origin"] = "*"
@@ -21,6 +23,9 @@ def getCsv(request):
             return qs_to_csv_response(Payment.objects.all(), 'payments') 
         elif csv_type == "sources":
             return Response({'batchId':batch_id})
+    if request.method == "GET":
+        response.data = get_batches()
+        return response
 
 @api_view(["GET", "POST"])
 def getData(request):
@@ -34,52 +39,10 @@ def getData(request):
         pass
     elif request.method == "POST":
         t = request.FILES['upload_file']
-        response.data = helper(t.file)
+        response.data = succint_view(t.file)
     return response
 
-def helper(file):
-    branch_amt = collections.defaultdict(float)
-    branch_cnt = collections.defaultdict(int)
-    source_amt = collections.defaultdict(float)
-    source_cnt = collections.defaultdict(int)
-    total = 0
 
-    context = ET.iterparse(file, events=("start", "end"))
-        
-    cur = ["", ""]
-    for index, (event, elem) in enumerate(context):
-        # Get the root element.
-        if index == 0:
-            root = elem
-        if event == "end" and elem.tag == "DunkinBranch":
-            # ... process record elements ...
-            cur[0] = elem.text
-            root.clear()
-        if event == "end" and elem.tag == "AccountNumber":
-            # ... process record elements ...
-            cur[1] = elem.text
-            root.clear()
-        if event == "end" and elem.tag == "Amount":
-            # ... process record elements ...
-            amt = float(elem.text[1:])
-            total += amt
-            branch_amt[cur[0]] += amt
-            branch_cnt[cur[0]] += 1
-            source_amt[cur[1]] += amt
-            source_cnt[cur[1]] += 1
-            cur = ["", ""]
-            root.clear()
-
-    branches = [(k,"$" + str(round(v,2)), branch_cnt[k]) for k,v in branch_amt.items()]
-    sources = [(k,"$" + str(round(v,2)), source_cnt[k]) for k,v in source_amt.items()]
-    data = {
-        "total_cost": str(round(total,2)),
-        "total_payments":sum([s[2] for s in sources]),
-        "branches": branches,
-        "sources": sources,
-        "batch_id": "BAT_"+ uuid.uuid4().hex[:10]
-    }
-    return data
 
 @api_view(["GET", "POST"])
 def processData(request):
@@ -97,7 +60,7 @@ def processData(request):
         response.data = {2:"k"}
     elif request.method == "POST":
         t = request.FILES['upload_file']
-        response.data = sql_helper(t.file)
+        response.data = newParse(t.file, approved=True)
     return response    
 
 def sql_helper(file):
