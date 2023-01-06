@@ -115,16 +115,56 @@ def helper(file):
             elem.clear()
         root.clear()
 
-helper(file_path)
-for x in emp_list:
-    print(x)
-for x in source_list:
-    print(x)
-for x in payment_list:
-    print(x)
+def newParse(file):
+    context = ET.iterparse(file, events=("start", "end"))
+    for index, (event, elem) in enumerate(context):
+        # Get the root element.
+        if index == 0:
+            root = elem 
+        # Using array index assumes XML will preserve format order.
+        # If we cannot make this assumption, check each elem.tag individually.
+        print(elem.tag)
+        if event == "end" and elem.tag == "Employee":
+            arr = [elem[x].text for x in range(len(elem))]
+            d_id, d_branch, f_name, l_name, dob, phone = arr
+            print(f_name)
+            elem.clear()
+        # elif event == "end" and elem.tag == "FirstName":
+        #     print('noo')
+        #     print(elem.text)
+            # root.clear()
+            # elem.clear()
+        if event == "end" and elem.tag == "Payor":
+            arr = [elem[x].text for x in range(len(elem)-1)]
+            d_id, aba_routing, acc_num, name, dba, ein = arr
+            root.clear()
+        if event == "end" and elem.tag == "Payee":
+            plaid, loan_acc = elem[0].text, elem[1].text
+            root.clear()
+        if event == "end" and elem.tag == "Amount":
+            amt = elem.text
+            root.clear()
+
+
+        
+
+newParse(file_path)
+
+# helper(file_path)
+# for x in emp_list:
+#     print(x)
+# for x in source_list:
+#     print(x)
+# for x in payment_list:
+#     print(x)
 
     # d_id, first_name, last_name, email
 
+# import pickledb
+# db = pickledb.load('test.db', False)
+# #db.set('h', {'k':[1,2,3]})
+# print(db.get('h')['k'][0])
+# print(db.dump())
 
 """ 
 from xml.etree.ElementTree import iterparse

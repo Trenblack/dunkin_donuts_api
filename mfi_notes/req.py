@@ -20,12 +20,19 @@ print(files)
 values = {'DB': 'photcat', 'OUT': 'csv', 'SHORT': 'short'}
 
 
-# r = requests.post(url+"approve/", files=files, data=values)
+# r = requests.post(url, files=files, data=values)
 # print(r.text)
 
 # r = requests.get(url)
 # print(r.text)
 
-r = requests.get(url)
-open("payments.csv", "wb").write(r.content)
-print(r.text)
+# r = requests.post(url+"getCsv/", {'type':'payments', 'batch_id':'xd'})
+# open("payments.csv", "wb").write(r.content)
+# print(r.text)
+
+
+# r = requests.post(url+"approve/", files=files)
+# print (r.text)
+
+r = requests.get(url+"getCsv/")
+print (r.text)

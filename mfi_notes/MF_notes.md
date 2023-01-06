@@ -243,6 +243,7 @@ Performance Optimizations:
     - Load balance
     - ...
 
+- After making this I realized that much of the bookkeeping was actually already handeled my methodfi. Oops, but also additonal services could be used to run once a night to make sure updates and consitent.
 
 ___
 # Final Draft
@@ -251,6 +252,11 @@ ___
 ## Problem
 - Priority
 - Scale
+
+## Frontend
+- A single page web app for simplcity. no routing.
+- Memory persists with local storage. Dont care rn.
+- No consideration for security.
 
 ## Data
 ### Schema
@@ -272,10 +278,10 @@ Once there is a method fi table for each of our entities, we actually don't need
 - Employee:
     d_id, mfi_created:bool, branch, first_name, last_name, phone, email, dob, plaid, loan, ..
 - Source:
-    d_id, mfi_created:bool, routing, acc_num, name, dba,ein, metadata ..
+    d_id, mfi_created:bool, aba_routing, account_number, name, dba,ein, metadata ..
 
 - Payment:
-    id, batch_id, to/from, amt, status, time_created, last_updated
+    id, batch_id, to/from, amt, idemp_key, status, time_created, last_updated
 
 We also need a map to go back and forth between payment_id to mfi_payment_id.
 
@@ -298,6 +304,7 @@ It would be faster to maintain aggr data by batch.
 
 {
     batch_id:
+        date_approved: timestamp
         sources: [
             {
                 d_id,
@@ -306,11 +313,19 @@ It would be faster to maintain aggr data by batch.
                 paid_so_far,
                 paid_so_far_count,
                 last_updated
-            }
+            },
             ...
         ]
         branches: [
-
+            {
+                branch_id,
+                initial_owed,
+                initial_owed_count,
+                paid_so_far,
+                paid_so_far_count,
+                last_updated
+            },
+            ...
         ]
 }
 
@@ -336,6 +351,8 @@ For the scope of this problem, I will not implement this.
 
 History
 Its probably also smart to record every "attempted" action as a log somewhere just in case of errors, or accounting, or checking. For the scope of this problem, I will not implement this.
+
+- Floating point error/amt conversion. Will not worry.
 
 ### Execution
 - NoSql
