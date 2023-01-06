@@ -25,7 +25,7 @@ def get_batches():
         }
         cur = json.loads(each['data'])['data']
         if "total_cost" in cur:
-            cur_data['status'] = "PROCESSING"
+            cur_data['status'] = "IN PROGRESS"
             total = sum(x['initial_owed_count'] for x in cur['sources'])
             paid = sum(x['paid_so_far_count'] for x in cur['sources'])
             cur_data['payments_remaining'] = total-paid
@@ -37,6 +37,7 @@ def get_batches():
 
 
 def newParse(file, approved=False):
+    # if batch_id already in batch, return 'already approved'
     branch_amt = collections.defaultdict(float)
     branch_cnt = collections.defaultdict(int)
     source_amt = collections.defaultdict(float)
@@ -44,7 +45,7 @@ def newParse(file, approved=False):
     total = 0
 
     batch_id = "BAT_"+ uuid.uuid4().hex[:10]
-    now = datetime.datetime.now()
+    now = datetime.datetime.now().strftime("%B %d, %Y at %H:%M:%S")
     if approved:
         b = Batch()
         b.batch_id = batch_id
@@ -54,6 +55,7 @@ def newParse(file, approved=False):
     curEmp = Employee()
     curSource = Source()
     curPayment = Payment()
+    sourceMap = {}
     pays = []
 
     context = ET.iterparse(file, events=("start", "end"))
@@ -65,20 +67,27 @@ def newParse(file, approved=False):
         # Using array index assumes XML will preserve format order.
         # If we cannot make this assumption, check each elem.tag individually.
         if event == "end" and elem.tag == "Employee":
-            arr = [elem[x].text for x in range(len(elem))]
-            d_id, d_branch, f_name, l_name, dob, phone = arr
-            #curEmp = Employee.objects.get(pk=d_id)
-            curEmp.d_id, curEmp.d_branch, = d_id, d_branch
+            curEmp = Employee.objects.get(pk=elem[0].text)
+            #arr = [elem[x].text for x in range(len(elem))]
+            #d_id, d_branch, f_name, l_name, dob, phone = arr
+            #curEmp.d_id, curEmp.d_branch, = d_id, d_branch
             root.clear()
+            elem.clear()
         if event == "end" and elem.tag == "Payor":
-            arr = [elem[x].text for x in range(len(elem)-1)]
-            d_id, aba_routing, acc_num, name, dba, ein = arr
-            #curSource = Source.objects.get(pk=d_id)
-            curSource.d_id = d_id
+            # arr = [elem[x].text for x in range(len(elem)-1)]
+            # d_id, aba_routing, acc_num, name, dba, ein = arr
+            #curSource.d_id = d_id
+            d_id = elem[0].text
+            if d_id in sourceMap:
+                curSource = sourceMap[d_id]
+            else:
+                curSource = Source.objects.get(pk=d_id)
+                sourceMap[d_id] = curSource
             root.clear()
-        if event == "end" and elem.tag == "Payee":
-            plaid, loan_acc = elem[0].text, elem[1].text
-            root.clear()
+            elem.clear()
+        # if event == "end" and elem.tag == "Payee":
+        #     plaid, loan_acc = elem[0].text, elem[1].text
+        #     root.clear()
         if event == "end" and elem.tag == "Amount":
             if approved:
                 curPayment.amount = elem.text
@@ -87,7 +96,7 @@ def newParse(file, approved=False):
                 curPayment.batch_id = batch_id
                 curPayment.last_updated = now
                 #curPayment.save()
-                #pays.append(curPayment)
+                pays.append(curPayment)
                 curPayment = Payment()
             amt = float(elem.text[1:])
             total += amt
@@ -96,8 +105,9 @@ def newParse(file, approved=False):
             source_amt[curSource.d_id] += amt
             source_cnt[curSource.d_id] += 1
             root.clear()
+            elem.clear()
 
-    #Payment.objects.bulk_create(pays)
+    Payment.objects.bulk_create(pays)
 
     branches = [
         {
@@ -111,7 +121,7 @@ def newParse(file, approved=False):
     ]
     sources = [
         {
-            "branch_id": k, 
+            "dunkin_id": k, 
             "initial_owed": "$" + str(round(v,2)),
             "initial_owed_count": source_cnt[k],
             "paid_so_far": "$0", 
@@ -162,7 +172,6 @@ def succint_view(file):
             branch_cnt[cur[0]] += 1
             source_amt[cur[1]] += amt
             source_cnt[cur[1]] += 1
-            cur = ["", ""]
             root.clear()
 
     branches = [(k,"$" + str(round(v,2)), branch_cnt[k]) for k,v in branch_amt.items()]
@@ -172,7 +181,6 @@ def succint_view(file):
         "total_payments":sum([s[2] for s in sources]),
         "branches": branches,
         "sources": sources,
-        "batch_id": "BAT_"+ uuid.uuid4().hex[:10]
     }
     return data
 

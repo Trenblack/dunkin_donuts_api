@@ -51,7 +51,7 @@ export default function ReportsTable() {
         {
             console.log(res)
             console.log(res.data.pk)
-            setBatches(res.data.batch_list)
+            setBatches(res.data.batch_list.slice(0).reverse())
         }); 
     }
 

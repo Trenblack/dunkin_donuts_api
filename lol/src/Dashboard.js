@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { styled, useTheme } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import MuiDrawer from '@mui/material/Drawer';
 import MuiAppBar from '@mui/material/AppBar';
@@ -8,21 +8,14 @@ import List from '@mui/material/List';
 import CssBaseline from '@mui/material/CssBaseline';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import MenuIcon from '@mui/icons-material/Menu';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import InboxIcon from '@mui/icons-material/MoveToInbox';
-import MailIcon from '@mui/icons-material/Mail';
 import AddIcon from '@mui/icons-material/Add';
 import SummarizeIcon from '@mui/icons-material/Summarize';
 import DownloadIcon from '@mui/icons-material/Download';
-import FilePicker from './FilePicker';
-import ReportsTable from './ReportsTable';
+import { useNavigate } from "react-router-dom";
 
 const drawerWidth = 180;
 // change to permanent bar.
@@ -94,17 +87,23 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' 
 
 
 
-export default function MiniDrawer() {
-  const [curIndex, setCurIndex] = React.useState(0);
+export default function Dashboard(props) {
+  let navigate = useNavigate(); 
+  const dashHandler = (index) => {
+    navigate(items[index].to)
+  }
+
 
   const items = [
     {
       text:"Payment",
       icon: <AddIcon />,
+      to: "/"
     },
     {
       text:"Reports",
       icon: <DownloadIcon />,
+      to: "/reports"
     },
   ]
   return (
@@ -130,7 +129,7 @@ export default function MiniDrawer() {
           <List>
             {items.map((item, index) => (
               <ListItem key={item.text} disablePadding>
-                <ListItemButton onClick={()=>setCurIndex(index)}>
+                <ListItemButton onClick={()=>dashHandler(index)}>
                   <ListItemIcon> {item.icon} </ListItemIcon>
                   <ListItemText primary={item.text} />
                 </ListItemButton>
@@ -153,7 +152,7 @@ export default function MiniDrawer() {
         </Box>
       </Drawer>
     <Box ml="100px" component="main" sx={{ flexGrow: 1, p: 9 }}>
-        {curIndex === 0 ? <FilePicker />:<ReportsTable />}
+        {props.component}
     </Box>
     </Box>
   );

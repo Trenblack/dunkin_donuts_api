@@ -9,7 +9,6 @@ import json
 from django.http import HttpResponse
 import csv
 
-
 @api_view(["GET", "POST"])
 def getCsv(request):
     response = Response()
@@ -22,7 +21,7 @@ def getCsv(request):
         print(request.data)
         csv_type, batch_id = request.data['type'], request.data['batch_id']
         if csv_type == "payments":
-            return qs_to_csv_response(Payment.objects.all(), csv_type) 
+            return qs_to_csv_response(Payment.objects.filter(batch_id=batch_id), csv_type) 
         elif csv_type == "sources" or csv_type=="branches":
             query = Batch.objects.get(batch_id=batch_id)
             batch_dict = json.loads(query.data)['data'][csv_type]
@@ -36,7 +35,6 @@ def getCsv(request):
             return response
 
     if request.method == "GET":
-        #response.data = get_batches()
         return get_batches()
 
 @api_view(["GET", "POST"])
@@ -56,7 +54,7 @@ def getData(request):
 
 
 
-@api_view(["GET", "POST"])
+@api_view(["POST"])
 def processData(request):
     print('yes')
     # Create batch data, SQL table, and Map 1 in one go
@@ -68,9 +66,7 @@ def processData(request):
     # x, created = Employee.objects.update_or_create(defaults=data)
     # if created:
     #     x.save()
-    if request.method == "GET":
-        response.data = {2:"k"}
-    elif request.method == "POST":
+    if request.method == "POST":
         t = request.FILES['upload_file']
         response.data = newParse(t.file, approved=True)
         #response.data = sql_helper(t.file)
