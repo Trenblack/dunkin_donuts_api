@@ -10,6 +10,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 export default function FilePicker() {
     const [isFilePicked, setIsFiledPicked] = useState(false)
     const [data, setData] = useState()
+    const [file, setFile] = useState()
 
     // useEffect(() => {
     //   const storedData = window.localStorage.getItem('data')
@@ -41,6 +42,7 @@ export default function FilePicker() {
         // }
         const data = new FormData() 
         data.append('upload_file', files[0])
+        setFile(files[0])
 
         axios.post(url, data).then(res => 
         {
@@ -61,6 +63,16 @@ export default function FilePicker() {
         setIsFiledPicked(false)
         setData()
       }
+    }
+    const approveBatch = () => {
+      const url = "http://127.0.0.1:8000/"
+      const data = new FormData() 
+      data.append('upload_file', file)
+
+      axios.post(url+"approve/", data).then(res => 
+      {
+          console.log(res)
+      });       
     }
 
     const approve = () => {
@@ -88,7 +100,7 @@ export default function FilePicker() {
     <React.Fragment>
         <Typography mt="20px" variant={'h4'} align="center">New Payment</Typography>
         {data? 
-        <div style={{marginTop:"20px"}}><CenteredTabs onApprove={approve} onDiscard={discard} data={data}/></div>:
+        <div style={{marginTop:"20px"}}><CenteredTabs onApprove={approveBatch} onDiscard={discard} data={data}/></div>:
         <div style={{border:"1px dotted grey", marginTop:"20px"}}>
           <input hidden accept="image/*" multiple type="file" />
           <FileDrop

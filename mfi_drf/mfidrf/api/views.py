@@ -5,7 +5,9 @@ import xml.etree.ElementTree as ET
 import uuid
 from .models import Employee, Source, Payment, Batch
 from .helper import qs_to_csv_response, succint_view, get_batches, newParse
-
+import json
+from django.http import HttpResponse
+import csv
 
 
 @api_view(["GET", "POST"])
@@ -20,12 +22,22 @@ def getCsv(request):
         print(request.data)
         csv_type, batch_id = request.data['type'], request.data['batch_id']
         if csv_type == "payments":
-            return qs_to_csv_response(Payment.objects.all(), 'payments') 
-        elif csv_type == "sources":
-            return Response({'batchId':batch_id})
+            return qs_to_csv_response(Payment.objects.all(), csv_type) 
+        elif csv_type == "sources" or csv_type=="branches":
+            query = Batch.objects.get(batch_id=batch_id)
+            batch_dict = json.loads(query.data)['data'][csv_type]
+            response = HttpResponse(
+                content_type='text/csv',
+                headers={'Content-Disposition': 'attachment; filename={}.csv'.format(csv_type)},
+            )
+            dict_writer = csv.DictWriter(response, batch_dict[0].keys())
+            dict_writer.writeheader()
+            dict_writer.writerows(batch_dict)
+            return response
+
     if request.method == "GET":
-        response.data = get_batches()
-        return response
+        #response.data = get_batches()
+        return get_batches()
 
 @api_view(["GET", "POST"])
 def getData(request):
@@ -61,6 +73,7 @@ def processData(request):
     elif request.method == "POST":
         t = request.FILES['upload_file']
         response.data = newParse(t.file, approved=True)
+        #response.data = sql_helper(t.file)
     return response    
 
 def sql_helper(file):

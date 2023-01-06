@@ -2,7 +2,7 @@ import datetime
 import uuid
 from django.db import connection
 from django.utils import timezone
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 import collections
 import xml.etree.ElementTree as ET
 from .models import Employee, Source, Payment, Batch
@@ -13,9 +13,28 @@ import json
 BATCH_DB_NAME = "batch.db"
 
 def get_batches():
-    batch_id = "BAT_"+ uuid.uuid4().hex[:10]
-    now = datetime.datetime.now()
-    return json.loads(serializers.serialize('json', Batch.objects.all()))
+    #batch_id = "BAT_"+ uuid.uuid4().hex[:10]
+    #now = datetime.datetime.now()
+    #return JsonResponse(json.dumps(serializers.serialize('json', Batch.objects.all())))
+    query = Batch.objects.all().values()
+    d = []
+    for each in query:
+        cur_data = {
+            "batch_id": each["batch_id"],
+            "date_approved": json.loads(each['data'])["date_approved"]
+        }
+        cur = json.loads(each['data'])['data']
+        if "total_cost" in cur:
+            cur_data['status'] = "PROCESSING"
+            total = sum(x['initial_owed_count'] for x in cur['sources'])
+            paid = sum(x['paid_so_far_count'] for x in cur['sources'])
+            cur_data['payments_remaining'] = total-paid
+        else:
+            cur_data['status'] = 'INITIALIZING'
+            cur_data['payments_remaining'] = "..."
+        d.append(cur_data)
+    return JsonResponse({'batch_list': list(d)})
+
 
 def newParse(file, approved=False):
     branch_amt = collections.defaultdict(float)
@@ -30,14 +49,12 @@ def newParse(file, approved=False):
         b = Batch()
         b.batch_id = batch_id
         b.data = json.dumps({"date_approved":now, "data":{}}, cls=DjangoJSONEncoder)
-        print('before')
         b.save()
-        print('after')
-        return
 
     curEmp = Employee()
     curSource = Source()
     curPayment = Payment()
+    pays = []
 
     context = ET.iterparse(file, events=("start", "end"))
 
@@ -50,14 +67,14 @@ def newParse(file, approved=False):
         if event == "end" and elem.tag == "Employee":
             arr = [elem[x].text for x in range(len(elem))]
             d_id, d_branch, f_name, l_name, dob, phone = arr
-            curEmp = Employee.objects.get(pk=d_id)
-            #curEmp.d_id, curEmp.d_branch, = d_id, d_branch
+            #curEmp = Employee.objects.get(pk=d_id)
+            curEmp.d_id, curEmp.d_branch, = d_id, d_branch
             root.clear()
         if event == "end" and elem.tag == "Payor":
             arr = [elem[x].text for x in range(len(elem)-1)]
             d_id, aba_routing, acc_num, name, dba, ein = arr
-            curSource = Source.objects.get(pk=d_id)
-            #curSource.d_id = d_id
+            #curSource = Source.objects.get(pk=d_id)
+            curSource.d_id = d_id
             root.clear()
         if event == "end" and elem.tag == "Payee":
             plaid, loan_acc = elem[0].text, elem[1].text
@@ -69,9 +86,9 @@ def newParse(file, approved=False):
                 curPayment.pay_from = curSource
                 curPayment.batch_id = batch_id
                 curPayment.last_updated = now
-                curPayment.save()
+                #curPayment.save()
+                #pays.append(curPayment)
                 curPayment = Payment()
-            
             amt = float(elem.text[1:])
             total += amt
             branch_amt[curEmp.d_branch] += amt
@@ -79,6 +96,8 @@ def newParse(file, approved=False):
             source_amt[curSource.d_id] += amt
             source_cnt[curSource.d_id] += 1
             root.clear()
+
+    #Payment.objects.bulk_create(pays)
 
     branches = [
         {
@@ -108,9 +127,8 @@ def newParse(file, approved=False):
         "sources": sources,
     }
     if approved:
-        b = Batch()
-        b.batch_id = batch_id
-        b.data = {"date_approved":now, "data":data}
+        b = Batch.objects.get(batch_id=batch_id)
+        b.data = json.dumps({"date_approved":now, "data":data}, cls=DjangoJSONEncoder)
         b.save()
     return data
 
