@@ -50,9 +50,9 @@ For the Payment object, the p_id unique identifier may be seperate from the paym
 ### SQL vs NoSQL
 
 The above data models can be implemented in both SQL and NoSQL databases. The decision ultimatley comes down to many factors relating to the specific needs of the system. I will not go in depth into the pro's and con's of each, since there is enough information about it online. However, for this demo application, I've decided to implement the models using a PostgreSQL database. I believe this made sense for a few reasons:
-    1) This is a simple demo application, and setting up a SQL database is simpler than NoSQL, and still serves the purpose of showing system flow.
-    2) 50k rows every two weeks is a very small and manageable workload for a SQL database. Especially if old processed payments are moved to another, read-only, database. Performance will not be a problem here.
-    3) SQL's ACID properties will ensures that our data will be consistent as we write and update our Payment's rows. This is CRUCIAL for a payment tracker and executor system.
+1) This is a simple demo application, and setting up a SQL database is simpler than NoSQL, and still serves the purpose of showing system flow.
+2) 50k rows every two weeks is a very small and manageable workload for a SQL database. Especially if old processed payments are moved to another, read-only, database. Performance will not be a problem here.
+3) SQL's ACID properties will ensures that our data will be consistent as we write and update our Payment's rows. This is CRUCIAL for a payment tracker and executor system.
 
 ### CSV reporting
 
@@ -62,7 +62,7 @@ To generate CSV for Sources/branches, we could simply do a query on the Payment'
 
 Another way that would be to maintain another table for aggregated data, where each entry corresponds with one batch. This would be faster for reading and generating CSV files since we don't have to recalculate, but it will also lead to more writes and having to maintain two databases. However, since there are only about 5 sources and 30 branches, the write speed will not scale up with the increases in payments. We can update this table on the fly and have it also act as another, seperate, table that also keeps track of payments, and having two seperate records of payments can be used to check the other table to ensure no errors/inconsistencies have occured.
 
-If we are okay with slightly delayed data, then we also don't have to write to this table on the fly. We can run a service that queries the Payment's table once every 6 hours and updates the batch data. This has the benefit of fast CSV generation (precomputation). We can also run the payment query only when the client sends a request for the CSV, and use this table as a sort of cache. This can help with having both moderately fast CSV generations and recent data. I will go with the first option (updating on the fly).
+If we are okay with slightly delayed data, then we also don't have to write to this table on the fly. We can run a service that queries the Payment's table once every 6 hours and updates the batch data. This has the benefit of fast CSV generation (precomputation). We can also run the payment query only when the client sends a request for the CSV, and use this table as a sort of cache. This can help with having both moderately fast CSV generations and recent data. I will go with the second option (updating on the fly).
 
 
 
