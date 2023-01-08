@@ -1,5 +1,7 @@
 ## Problem
 - Priority
+Must be robust.
+
 - Scale
 
 ## Frontend
@@ -11,9 +13,7 @@ When creating a new report, to view the XML data in a "succint" way, I've create
 
 I've chosen to handle the parsing in the backend to prevent the client from having to heavy computations. Using a Python library built on C, and XML with about 50k rows can be processed and returned in under one second. 
 
-In the future, there can also be some way to view data by individual users. This can be done through taking advantage of virtualized lists, pagination, and a "search bar" feature. 
-
-Since this was just meant to be a basic demo, I didn't worry about things like memory persistance, security, or production level react/javascript code.
+In the future, there can also be some way to view data by individual users. This can be done through taking advantage of virtualized lists, pagination, and a "search bar" feature. Due to the structure of this system, this feature would be easy to implement into the existing codebase. However, since the question did not ask for this, I've decided to skip this feature for now. And since this is meant to be a basic memo, I've also decided to not worry about things like memory persistance, security, or production level react/javascript code.
 
 Demo seen here:
 https://youtu.be/MDe__1Vc5Sc
@@ -48,7 +48,7 @@ acc_id_to_d_id:
 
 
 
-For the scope of this problem, we actually don't need to create any tables for employees or sources. No "reporting" data on employees ever needs to be used. It would be enough to have just a map for d_id to acc_id. Furthermore, Method API already keeps track of entities. However, since payment systems usually care a lot about being able to report data by each user, I will create them anyway. This is especially useful if we assume that acc_id's dont already exist for each d_id, and we have to create entitys/accounts ourselves.
+For the scope of this problem, we actually don't need to create any tables for employees or sources. No "reporting" data on employees ever needs to be used. It would be enough to have just a map for d_id to acc_id. Furthermore, Method API already keeps track of entities. However, since payment systems usually care a lot about being able to report data by each user, I will create them anyway. This is especially useful if we assume that MFI acc_id's dont already exist for each d_id, and we have to create entitys/accounts ourselves.
 
 Objects Models:
 
@@ -183,10 +183,16 @@ Client -> Get CSV(batch_id, payment) -> Server -> returns csv created from payme
 
 MFI Webhooks -> Server -> acc_id to d_id map -> updates Payment table, get batch_id, -> update batch aggregated data.
 
+## Points of Error
+Due to the robust nature that is required of financial tracking and executing systems, there are many points of error that need to be addressed. The whole scope of these errors are beyond the scope of this problem, so I've listed just a few below + possible solutions.
+
+1) Double Payments
+
+Since the payment executor queue uses Payment objects from the Payment's table, which includes a idempotent key, we do not have to worry about the payments queue sending multiple requests to the MFI Api, which takes in an idempotent key. Sending in multiple requests from this queue to the MFI Api would thus be the same as sending in one request. Another possibility is that the client sends the same file to the server under the "approve payment" gateway. This could happen from the client pressing the "approve" batch button multiple times very quickly. However, since the batch_id is generated before the approve payment request is sent, this batch_id also acts like an idempotent key at this stage, and thus further approve requests can be ignored once the batch_id processing has began. Lastly, if someone sends in the same file twice but on seperate times (leading to seperate batch_id's), we could also keep a hash of files to make sure no duplicate files are being approved.
+
 ## A few ways to Improve
 
 - After old batches are completely processed, there is no need to have them in the same payments table. We could occasionaly run a script to move old payments to an another readonly table. This will make our read and write on our main payments table faster.
 - Add Retry queue and dead letter queu instead of directly updating the status to failed.
-- Performance improvements (eg: sharding, multiple workers, load balancers)
-- Data duplication for security
+- Many Improvements (eg: sharding, multiple workers, load balancers, data duplicates) can be automatically implemented by using softwares like AWS. 
 - Routinley run checks to make sure aggregated data table, payments table, and MFI payments are all in sync.
