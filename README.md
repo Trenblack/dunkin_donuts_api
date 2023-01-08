@@ -48,24 +48,19 @@ acc_id_to_d_id:
 
 
 
-For the scope of this problem, we actually don't need to create any tables for employees or sources. No "reporting" data on employees ever needs to be used. It would be enough to have just a map for d_id to acc_id. Furthermore, Method API already keeps track of entities. However, since payment systems usually care a lot about being able to report data by each user, I will create them anymore. This is especially useful if we assume that acc_id's dont already exist for each d_id, and we have to create entitys/accounts ourselves.
+For the scope of this problem, we actually don't need to create any tables for employees or sources. No "reporting" data on employees ever needs to be used. It would be enough to have just a map for d_id to acc_id. Furthermore, Method API already keeps track of entities. However, since payment systems usually care a lot about being able to report data by each user, I will create them anyway. This is especially useful if we assume that acc_id's dont already exist for each d_id, and we have to create entitys/accounts ourselves.
 
+Objects Models:
 
-- Employee:
-    d_id, mfi_created:bool, branch, first_name, last_name, phone, email, dob, plaid, loan, metadata ..
-- Source:
-    d_id, mfi_created:bool, aba_routing, account_number, name, dba,ein, metadata ..
-
-- Payment:
-    id, batch_id, to/from, amt, idemp_key, status, time_created, last_updated
+1) Employee: (d_id, mfi_created:bool, branch, first_name, last_name, phone, email, dob, plaid, loan, metadata ..)
+2) Source: (d_id, mfi_created:bool, aba_routing, account_number, name, dba,ein, metadata ..)
+3) Payment: (id, batch_id, to/from, amt, idemp_key, status, time_created, last_updated)
 
 I will assume that currency is always USD, and will not worry about payment ammount floating point errors.
 
-Note: We may also need a map to convert between payment_id from MFI and our own.
+Note: We may also need a map to convert between the payment_id from MFI's requests and our own table.
 
-Ive assumed that currency will be USD and did not specify further.
-
-To generate CSV, we could simply do a query on the payments table specifying batch_id, and using the status/amt to calculate how much each source/branch has paid. Another way that would be to maintain another table for aggregated data, where each entry corresponds with one batch. This would be faster for reading and generating CSV files since we don't have to recalculate, but it will also lead to more writes and having to maintain two databases. However, this can also act as another, seperate, table that also keeps track of payments, and having two seperate records of payments can help making sure that no errors have occured. 
+To generate CSV, we could simply do a query on the payments table specifying batch_id, and using the status/amt to calculate how much each source/branch has paid. Another way that would be to maintain another table for aggregated data, where each entry corresponds with one batch. This would be faster for reading and generating CSV files since we don't have to recalculate, but it will also lead to more writes and having to maintain two databases. However, since there are only about 5 sources and 30 branches, the write speed will not scale up with the increases in payments. Furthermore, this can also act as another, seperate, table that also keeps track of payments, and having two seperate records of payments can help making sure that no errors have occured. 
 
 
 {
@@ -122,25 +117,29 @@ To generate CSV, we could simply do a query on the payments table specifying bat
 }
 
 
-User wallet
-So a problem here is we also want to obviously keep track of how much each user is owed/paid, or a wallet. This can be calculated with the payments table. However, there are a few benefits to having an additonal system.
-    1. Faster read data, can get employee data without calculations
-    2. Additional layer to double check payment balances are correct
+### Wallet
+We might want to keep track of how much each source/employee is owed/paid, or a wallet. This would be something that is independant of batches. One way to acquire such data is to just do a query on the payments table where we filter by all rows where the from/to columns is the source/employees's d_id. Using the "amt" and "status" columns, we can calculate how much each employee/source has been overall paid/received. This will work, but can lead to many heavy queries if done very often.
 
-One solution is to create a table for wallets that would be 1:1 with  its respective employee, and this can maintain aggregated data. This is positive because we don't have to do any calculations when we query for an account.
+Another approach is to maintain an additonal system. Some of the benefits are as follows:
+    1. Faster read data, can get employee data without querying the payments table and making calculations.
+    2. Additional layer to double check payment balances are correct.
+    
+While some of the cons here are the increased complexity from maintaining another system, a possibility of inconsistent data, and many more writes than our previous approach. 
 
-Another solution is that we can build a relationship between users and all the payments they are in. Then, we still have to query, but it'll be much faster. Another benefit of this is that we can generate a payment history list for each user. In SQL, this can be a one to many relationship, and in NoSQL, this can be with a wide column datastore like Cassandra.
+One way of implementing this can be to create a table for wallets that would be 1:1 with its respective employee, and this can maintain aggregated data per user. This would be a very simple system to maintain, and would very quickly be able to read and provide aggregated data per employee/source. However, this loses the ability to get a list of all payments involvng a user, which may be important down the line in generating payment histories or doing bookeeping.
 
-Depending on how often we expect employee balance information to be requested, we can implement one or both of these. But since this problem does not ask for any employee specific data, I will not implement this.
+To sidestep this, another solution can be to build a relationship between users and all the payments they are in. Then, we still have to calculate each payment to provide aggregated data, but we can retrieve the payments corresponding with each employee/source very quickly, while still having the option to generate a payment history list for each employee/source. In SQL, this can be done with a one to many relationship, and in NoSQL, this can be done with a wide column datastore like Cassandra.
 
-Ledger
-A debit/credit system to make sure every payment is accounted for. This can be implemented as one table with employees and sources alike. This will help double payments be caught, as well as give a place to keep track of credit/debit which will aid in tracking returns and reversed payments.
+Depending on how often we expect employee balance information to be requested, we can implement one or both of these. But since this problem does not ask for any employee specific data, I will not implement any of these. 
 
-Ledger: (d_id, debit, credit)
+### Ledger
+A debit/credit system to make sure every payment is accounted for. This can be implemented as one table with employees and sources alike. This will help double payments be caught, as well as give a place to keep track of credit/debit which will aid in tracking returns and reversed payments. The philosophy here is that the total sum of the debit and credit should equal to 0, and if it does not, that is an early flag that something has went wrong. 
+
+Ledger object: (pk=d_id, debit, credit, last_updated?)
 
 For the scope of this problem, I will not implement this.
 
-History
+### History
 Its probably also smart to log every action attempted in case of errors or accounting. 
 
 
