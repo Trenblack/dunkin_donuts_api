@@ -18,6 +18,9 @@ Since this was just meant to be a basic demo, I didn't worry about things like m
 Demo seen here:
 https://youtu.be/MDe__1Vc5Sc
 
+[![Demo](https://img.youtube.com/vi/MDe__1Vc5Sc/0.jpg)](https://youtu.be/MDe__1Vc5Sc)
+
+
 ## Data
 ### Schema
 XML gives us a unique identifier for everyone, d_id. Method Fi used acc_id. It may be confusing to have two unique identifiers for the same object. In order to be able to talk to our internal database, we will use d_id, but to talk to method_fi, we use acc_id. So, we will two key:value stores to easily switch between them.
