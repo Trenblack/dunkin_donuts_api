@@ -150,33 +150,55 @@ It's also important to log every action somewhere in case of errors, troubleshoo
 ## Flow/API endpoints
 1) Get Summarized Data
 
+POST request (XML file)
+
+Client -> Server -> Returns summarized data (batch_id, total by branch/source)
+
 2) Approve Payment Batch
-Client -> Approve(xml file) -> Server -> adds payments to payments table, creates new batch object, add payment_id's to Payment Queue
+
+POST request (XML file, batch_id)
+
+Client -> Approve(xml file) -> Server -> initializes payments to payments table, initializes batch object to batch table -> Calls service that adds all "UNPROCESSED" payments to payments queue
 
 3) Process Payment (payment queue)
+
 For each payment_id in payment queue:
+
     If to/from d_id does not have mfi_acc_id in map1:
+
         send payment_id to account queue
+
     else
         get to/from from payment table using payment_id
+
         use converter maps to convert to mfi_acc_id
+
         use that to create new Payment request to MFI API
+
         MFI response -> Update Payments table status
 
 4) Process Account (account queue)
+
 For each payment_id in account_queue:
+
     get to/from id from payment table using payment_id
+
     use employee/source table to get data of to/from using to/from id
+
     send request to MFI api to create entity/account
+
     update the mfi_acc_id fields in converter map
+
     send payment_id to payment queue
 
 5) Get batches
+
 GET request
 
 Client -> Server -> returns list of batche_id's with some summarized data
 
 6) Get CSV
+
 POST request, (batch_id, type) where type can be payment, source, or branch. 
 
 Client -> Get CSV(batch_id, source/branch) -> Server -> returns csv created from batch data table
