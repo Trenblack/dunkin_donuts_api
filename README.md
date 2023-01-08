@@ -1,11 +1,12 @@
 ## Problem
-- Priority
-Must be robust.
+My understanding of this problem is to create a financial tracking and payment executing program that, using the Method Financial API to "execute" payments, will provide an easy to use yet robust system for Dunkin Donuts Employee payments.
 
-- Scale
+We are dealing with a scale of about 50k payments every two weeks across 10k employees, 5 sources, and 30 branches. We need the ability to generate payment status data, branch data by batch, and source data by batch. 
+
+Due to the nature of financial systems, this system should be quite error proof and able to deal with, or easily implement things that will deal with, things that could go wrong in a financial system. On top of that, it should have consistent data, book keeping, and an efficient system to safely and quickly retrieve up to date data.
 
 ## Frontend
-For the frontend, I just created a basic react app using the MUI library suggest in the prompt. It was my first time using this library, but found it to be simple and efficient. 
+For the frontend, I just created a basic react app using the MUI library suggest in the prompt. It was my first time using this library, but found it to be very helpful. 
 
 The app consists of two pages: One for submitting new reports, and one for viewing old reports(seperated by batches, with the ability go generate CSV files for each batch). 
 
@@ -162,34 +163,36 @@ Client -> Approve(xml file) -> Server -> initializes payments to payments table,
 
 3) Process Payment (payment queue)
 
-For each payment_id in payment queue:
+    For each payment_id in payment queue:
 
-    If to/from d_id does not have mfi_acc_id in map1:
+        if to/from mfi_created == false:
 
-        send payment_id to account queue
+            send payment_id to account queue
 
-    else
-        get to/from from payment table using payment_id
+        else
+            get to/from from payment table using payment_id
 
-        use converter maps to convert to mfi_acc_id
+            use converter maps to convert to mfi_acc_id
 
-        use that to create new Payment request to MFI API
+            use that to create new Payment request to MFI API
 
-        MFI response -> Update Payments table status
+            MFI response -> Update Payments table status to "PROCESSING"
 
 4) Process Account (account queue)
 
-For each payment_id in account_queue:
+    For each payment_id in account_queue:
 
-    get to/from id from payment table using payment_id
+        get to/from id from payment table using payment_id
 
-    use employee/source table to get data of to/from using to/from id
+        use employee/source table to get data of to/from using to/from id
 
-    send request to MFI api to create entity/account
+        send request to MFI api to create entity/account
 
-    update the mfi_acc_id fields in converter map
+        update the mfi_acc_id fields in converter map, 
+        
+        set employee/source field: mfi_created = true
 
-    send payment_id to payment queue
+        send payment_id to payment queue
 
 5) Get batches
 
@@ -207,7 +210,7 @@ Client -> Get CSV(batch_id, payment) -> Server -> returns csv created from payme
 
 7) Update Payment status
 
-MFI Webhooks -> Server -> acc_id to d_id map -> updates Payment table, get batch_id, -> update batch data table.
+MFI Webhooks -> Server -> acc_id to d_id map -> updates Payment table status = "SUCCESS" -> get batch_id update batch data table.
 
 ## Points of Error
 Due to the robust nature that is required of financial tracking and executing systems, there are many points of error that need to be addressed. The whole scope of these errors are beyond the scope of this problem, so I've listed just a few below + possible solutions.
