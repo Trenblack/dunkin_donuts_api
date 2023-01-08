@@ -6,13 +6,11 @@ We are dealing with a scale of about 50k payments every two weeks across 10k emp
 Due to the nature of financial systems, this system should be quite error proof and able to deal with, or easily implement things that will deal with, things that could go wrong in a financial system. On top of that, it should have consistent data, book keeping, and an efficient system to safely and quickly retrieve up to date data.
 
 ## Frontend
-For the frontend, I just created a basic react app using the MUI library suggest in the prompt. It was my first time using this library, but found it to be very helpful. 
-
-The app consists of two pages: One for submitting new reports, and one for viewing old reports(seperated by batches, with the ability go generate CSV files for each batch). 
+For the frontend, I just created a basic react app consisting of two pages: One for submitting new reports, and one for viewing old reports(seperated by batches, with the ability go generate CSV files for each batch). 
 
 When creating a new report, to view the XML data in a "succint" way, I've created a parser in the back end that returns aggregated data. That data is then displayed as a table that can be sorted by either branches or sources. 
 
-I've chosen to handle the parsing in the backend to prevent the client from having to heavy computations. Using a Python library built on C, and XML with about 50k rows can be processed and returned in under one second. 
+I've chosen to handle the parsing in the backend to prevent the client from having to heavy computations. Using a Python library built on C, an XML with about 50k rows can be processed and returned in under one second. 
 
 In the future, there can also be some way to view data by individual users. This can be done through taking advantage of virtualized lists, pagination, and a "search bar" feature. Due to the structure of this system, this feature would be easy to implement into the existing codebase. However, since the question did not ask for this, I've decided to skip this feature for now. And since this is meant to be a basic memo, I've also decided to not worry about things like memory persistance, security, or production level react/javascript code.
 
@@ -22,7 +20,11 @@ https://youtu.be/MDe__1Vc5Sc
 [![Demo](https://i.imgur.com/wNcAkAt.png)](https://youtu.be/MDe__1Vc5Sc)
 
 
-## Data
+## Backend
+For the Backend, I've decided to create a simple REST API using Django Rest Framework. Anything would have worked, but I decided to go with DRF for no reason besides wanting to brush up on it since many of my other interviews are in Django. 
+
+
+### Data
 The XML file has shown that there exists a unique identifier for all sources/employees, dunkin_id (d_id). For each source/employee, the Method Financial (MFI) maintains a unique identifier using acc_id (*note: for the sake of simplicity and explaining system flow, I'm going to assume that a dunkin_id is directly related to an MFI account acc_id, ignoring the intermediate step of entity_id.*)
 
 
@@ -245,5 +247,7 @@ There is also an additonal account of data that is stored in the MFI databases, 
 
 
 ## Conclusion
+
+Overall I've decided to spend more time thinking about the system design than worrying about the details of any specific API. As a result, the code is not meant to reflect production level code or best practices. However, I really did enjoy thinking about and exploring the robustness of payment systems. 
 
 As a concluding note, I realized after designing all of this that much of what I did may have already been done by the MFI Api, and I may have reinvented the wheel in my "data tracking" pursuit. In that case, I may have misunderstood the assignment. But instead of going through the MFI docs and learning exactly what I was and wasn't supposed to do, I've settled on just finishing what I have and treating the MFI Api as a sort of "black box" where I don't actually implement any interactions with it, but rather explain how my system would interact with it, as I feel that does an ample job at demonstrating how I approach and think about problems. Let me know if you guys have any questions!
