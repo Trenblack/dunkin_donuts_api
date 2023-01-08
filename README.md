@@ -18,7 +18,7 @@ Since this was just meant to be a basic demo, I didn't worry about things like m
 Demo seen here:
 https://youtu.be/MDe__1Vc5Sc
 
-[![Demo](https://img.youtube.com/vi/MDe__1Vc5Sc/0.jpg)](https://youtu.be/MDe__1Vc5Sc)
+[![Demo](https://i.imgur.com/wNcAkAt.png)](https://youtu.be/MDe__1Vc5Sc)
 
 
 ## Data
