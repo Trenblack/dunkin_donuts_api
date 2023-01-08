@@ -55,31 +55,57 @@ Ive assumed that currency will be USD and did not specify further.
 To generate CSV, we could simply do a query on the payments table specifying batch_id, and using the status/amt to calculate how much each source/branch has paid. Another way that would be to maintain another table for aggregated data, where each entry corresponds with one batch. This would be faster for reading and generating CSV files since we don't have to recalculate, but it will also lead to more writes and having to maintain two databases. However, this can also act as another, seperate, table that also keeps track of payments, and having two seperate records of payments can help making sure that no errors have occured. 
 
 {
+
     batch_id:
+    
         date_approved: timestamp
+        
         sources: [
+        
             {
+            
                 d_id,
+                
                 initial_owed,
+                
                 initial_owed_count,
+                
                 paid_so_far,
+                
                 paid_so_far_count,
+                
                 last_updated
+                
             },
+            
             ...
+            
         ]
+        
         branches: [
+        
             {
+            
                 branch_id,
+                
                 initial_owed,
+                
                 initial_owed_count,
+                
                 paid_so_far,
+                
                 paid_so_far_count,
+                
                 last_updated
+                
             },
+            
             ...
+            
         ]
+        
 }
+
 
 User wallet
 So a problem here is we also want to obviously keep track of how much each user is owed/paid, or a wallet. This can be calculated with the payments table. However, there are a few benefits to having an additonal system.
