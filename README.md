@@ -23,16 +23,26 @@ https://youtu.be/MDe__1Vc5Sc
 XML gives us a unique identifier for everyone, d_id. Method Fi used acc_id. It may be confusing to have two unique identifiers for the same object. In order to be able to talk to our internal database, we will use d_id, but to talk to method_fi, we use acc_id. So, we will two key:value stores to easily switch between them.
 
 d_id_to_acc_id:
+
 {
+
     d_id: acc_id,
+    
     ...
+    
 }
 
+
 acc_id_to_d_id:
+
 {
+
     acc_id:d_id,
+    
     ...
+    
 }
+
 
 
 For the scope of this problem, we actually don't need to create any tables for employees or sources. No "reporting" data on employees ever needs to be used. It would be enough to have just a map for d_id to acc_id. Furthermore, Method API already keeps track of entities. However, since payment systems usually care a lot about being able to report data by each user, I will create them anymore. This is especially useful if we assume that acc_id's dont already exist for each d_id, and we have to create entitys/accounts ourselves.
@@ -53,6 +63,7 @@ Note: We may also need a map to convert between payment_id from MFI and our own.
 Ive assumed that currency will be USD and did not specify further.
 
 To generate CSV, we could simply do a query on the payments table specifying batch_id, and using the status/amt to calculate how much each source/branch has paid. Another way that would be to maintain another table for aggregated data, where each entry corresponds with one batch. This would be faster for reading and generating CSV files since we don't have to recalculate, but it will also lead to more writes and having to maintain two databases. However, this can also act as another, seperate, table that also keeps track of payments, and having two seperate records of payments can help making sure that no errors have occured. 
+
 
 {
 
@@ -103,6 +114,7 @@ To generate CSV, we could simply do a query on the payments table specifying bat
             ...
             
         ]
+        
         
 }
 
